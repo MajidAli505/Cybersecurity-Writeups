@@ -56,6 +56,7 @@ In the browser, log in to Carlos's account with the new password you just set an
 ## Reference Screenshot
 
 <img width="1995" height="1569" alt="step-1" src="https://github.com/user-attachments/assets/a17dc8d0-adbf-4c15-9c50-384b59b4c056" />
+
 ## Key Takeaways
 
 - A reset token provides security only if the server verifies it — and binds it to the account — at the moment the new password is submitted. A token that is checked nowhere is pure decoration.
