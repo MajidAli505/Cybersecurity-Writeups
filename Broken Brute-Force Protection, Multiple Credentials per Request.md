@@ -21,13 +21,13 @@ The application applies rate limiting to login attempts, and the victim's userna
 
 ### Step 1: Confirm the Rate Limit — and That IP Spoofing Does Not Help
 
-The lab told me the victim's username is `carlos`; I needed to find his password. I first tried IP spoofing to bypass the rate limit, but it didn't work:
+The lab told me the victim's username is `carlos`; I needed to find his password. I first tried IP spoofing to bypass the rate limit, but that technique did not work here — the application applied the rate limit anyway, as shown on the right side of the screenshot:
 
 <img width="2993" height="1296" alt="step-1" src="https://github.com/user-attachments/assets/c68eabed-5bf4-41b7-a261-36f6db38c5f" />
 
 ### Step 2: Notice the Credentials Are Sent as JSON
 
-Looking at the login request, I saw that the credentials were sent in JSON format. That suggested the server might accept JSON arrays:
+Looking at the login request, I saw that the credentials were sent in JSON format. That suggested the second technique: **multiple credentials per request**.
 
 <img width="2070" height="1022" alt="step-2" src="https://github.com/user-attachments/assets/2a8e0ea1-0c2d-4797-af2f-58fcfb1e2c5c" />
 
@@ -41,7 +41,7 @@ I had a wordlist of 100 candidate passwords for the lab. First, I converted the 
 
 ### Step 4: Send All 100 Passwords in a Single Request
 
-I pasted the passwords into the `password` field of the login request, in JSON array format, and sent a single request:
+I pasted the passwords into the `password` field of the login request, in JSON array format, and sent the request. The response was a **`302` redirect** — the technique had worked, and one of the passwords in the array was correct. Because the whole list went in a single request, the rate limiter never blocked the attempt:
 
 <img width="3004" height="1551" alt="step-5" src="https://github.com/user-attachments/assets/4a073718-a829-4c6c-b124-4fa86ba8bd73" />
 
@@ -63,13 +63,12 @@ I pasted the link into the browser. The page loaded and I was logged in as **`ca
 
 ## Key Takeaways
 
-- A rate limiter that counts *requests* provides no protection if a single request can carry many guesses.
-- Accepting credentials in a flexible format (such as JSON) can silently change the security properties of an endpoint.
-- Always validate and constrain the type and structure of user-supplied data, especially in security-critical endpoints such as login.
-- Brute-force protection must consider the number of credentials processed, not just the number of requests received.
+- A rate limiter that counts *requests* provides no protection if a single request can carry many guesses. Defences must count **authentication attempts**, not HTTP requests.
+- Accepting credentials in a flexible format (such as JSON) can silently change the security properties of an endpoint: type confusion — here, an array where a string is expected — turned the login form into a bulk password checker.
+- Defence in depth matters: account lockout can be sprayed or stuffed around, and IP rate limiting can be rotated or spoofed around. Layered controls, combined with strict input validation, are what make brute-force protection hold.
 
 ## Remediation
 
-- Enforce a strict schema for login requests: reject requests where the `password` field is not a single string.
-- Count each credential guess separately for rate limiting, regardless of how credentials are packaged.
-- Combine request rate limiting with per-account protections (such as progressive delays or CAPTCHAs) rather than relying on IP-based limits alone.
+- Validate credential fields strictly: the `password` field must be a single string, and any other type (such as an array) must be rejected.
+- Apply rate limiting and lockout logic per *credential attempt*, including every value inside a multi-value submission.
+- Combine IP-based rate limiting (based on the real connection IP, not client-supplied headers) with per-account throttling and alerting on credential-stuffing patterns.
