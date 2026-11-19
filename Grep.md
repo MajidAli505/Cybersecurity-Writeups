@@ -19,8 +19,8 @@ Register on SearchMe by recovering the real API key from the application's publi
 
 <img width="3191" height="772" alt="step-2" src="https://github.com/user-attachments/assets/88e669a8-d6b1-4c7b-a3e9-f2e6e7786adf" />
 
-
 ## Walkthrough
+
 ### Step 1: First Look — a Default Page on HTTP, a Real Site on HTTPS
 
 Browsing to the target IP over plain HTTP returns only the **Apache2 Ubuntu default page** — a decoy surface. Over **HTTPS**, the picture changes: there is real site information there. The difference is the virtual host, which the scan confirms next.
