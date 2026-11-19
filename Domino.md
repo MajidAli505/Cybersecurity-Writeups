@@ -134,19 +134,23 @@ Inside the portal, user-specific pages are addressed by a numeric **ID in the UR
 The next goal is the admin panel (still access-denied from outside). Poking around turns up two artefacts: a `token.php` page that issues a **token**, and — by capturing a normal request in Burp Suite — the portal's **session cookie**. Swapping the session cookie for the token value is the obvious experiment; it does **not** work. Set both aside — the token returns later in a different role.
 <img width="2838" height="1150" alt="step-25" src="https://github.com/user-attachments/assets/cd51c376-66a0-4d21-bc94-c5e343d19384" />
 
-[[IMAGE_26]]
+<img width="2881" height="718" alt="step-26" src="https://github.com/user-attachments/assets/3d2f475a-9330-474f-b19e-340ee45c5c7f" />
 
-[[IMAGE_27]]
+
+<img width="2188" height="1302" alt="step-27" src="https://github.com/user-attachments/assets/85799f76-28f0-49e8-8003-8d5fd12bfac1" />
+
 
 ### Step 9: The Support Ticket — Check the Cookie's Flags
 
 The portal lets users create **support tickets** for the staff — content an admin will later read. Before writing any payload, check how the session cookie is configured in the browser's developer tools: **`HttpOnly` is false**. That single missing flag means JavaScript running in the admin's browser *can read the admin's session cookie* — the prerequisite for a stored-XSS cookie heist is met.
 
-[[IMAGE_28]]
+<img width="2715" height="789" alt="step-28" src="https://github.com/user-attachments/assets/6e4fb7d3-4aa5-445b-8f5f-340392fea9dc" />
 
-[[IMAGE_29]]
+<img width="2758" height="1486" alt="step-29" src="https://github.com/user-attachments/assets/dc39ca2a-f0c1-4d29-ad5d-03c25324ab2d" />
 
-[[IMAGE_30]]
+
+<img width="2919" height="559" alt="step-30" src="https://github.com/user-attachments/assets/5c499648-97f7-4451-9d61-0f5a28005d4f" />
+
 
 ### Step 10: Stored XSS — Steal the Admin's Cookie
 
@@ -158,23 +162,30 @@ Write a ticket whose body carries a script that sends the reader's cookie to a s
 
 The first attempt, caught against a plain HTTP server, brings nothing. Retry the ticket with a **Netcat listener** waiting instead — and after a short while the request arrives: an admin reviewed the ticket, the script ran in their browser, and **the admin's session cookie** lands on Kali.
 
-[[IMAGE_31]]
+<img width="2395" height="1266" alt="step-31" src="https://github.com/user-attachments/assets/6c866b97-56a4-42e1-8190-475c5a051c55" />
 
-[[IMAGE_32]]
 
-[[IMAGE_33]]
+<img width="1904" height="407" alt="step-32" src="https://github.com/user-attachments/assets/aa7e26e8-0abe-4bf3-b02b-6a4ae7cabac5" />
 
-[[IMAGE_34]]
+
+<img width="2338" height="1183" alt="step-33" src="https://github.com/user-attachments/assets/cf54a6e8-51d7-4761-bd7b-c30be276219a" />
+
+
+<img width="2811" height="762" alt="step-34" src="https://github.com/user-attachments/assets/a98641a4-9cae-4472-a695-cd3a6ed01c25" />
+
 
 ### Step 11: Session Hijack — Into the Admin Panel
 
 Browse to `/admin` directly and it still says access denied — the *browser's* cookie is what identifies a normal user. Replace the session cookie in the browser with the stolen admin cookie and reload: the **admin panel opens**, and an admin **flag** is there with it. No password was ever guessed; the session itself was the credential.
 
-[[IMAGE_35]]
+<img width="2775" height="1335" alt="step-35" src="https://github.com/user-attachments/assets/5d5935b2-0b2d-44e6-b5bf-70d12f7d9b28" />
 
-[[IMAGE_36]]
 
-[[IMAGE_37]]
+<img width="2367" height="484" alt="step-36" src="https://github.com/user-attachments/assets/fdbe5ca0-ee89-449c-b99d-660df32b7a43" />
+
+
+<img width="2659" height="1269" alt="step-37" src="https://github.com/user-attachments/assets/b70cc17c-47be-42da-84aa-69ce4ac5fa04" />
+
 
 ### Step 12: The File Endpoint and Its Broken JWT
 
@@ -182,13 +193,17 @@ The admin area links to a file-reading endpoint. It is driven by a **token** —
 
 A JWT is three base64url parts separated by dots; the **payload is the middle part**. Decoding just that segment (pasting the whole token into a base64 decoder yields nothing useful — the parts must be split first) shows the problem: although the account is an admin, the token endpoint has issued the token with role **`user`**.
 
-[[IMAGE_38]]
+<img width="2815" height="1140" alt="step-38" src="https://github.com/user-attachments/assets/a58c52e1-eb1e-4b4f-ac11-24dfafc681c8" />
 
-[[IMAGE_39]]
 
-[[IMAGE_40]]
+<img width="2856" height="683" alt="step-39" src="https://github.com/user-attachments/assets/6d3c296f-7ee9-4745-a19f-107ecce01a0a" />
 
-[[IMAGE_41]]
+
+<img width="2872" height="328" alt="step-40" src="https://github.com/user-attachments/assets/66708eec-b258-4568-8d8c-ce102d392cd6" />
+
+
+<img width="2859" height="612" alt="step-41" src="https://github.com/user-attachments/assets/29ba8cbd-d6ec-43f6-a219-31c39e3cefa0" />
+
 
 ### Step 13: Forge an Admin JWT on jwt.io
 
@@ -196,47 +211,61 @@ Open the token on **jwt.io** and investigate. The payload plainly shows `"role":
 
 The secret is not new information: it is the **same key recovered from `app.js` during enumeration**, supplied in its hex form. Sign the edited token with it on jwt.io, and the forged JWT is valid — the server cannot distinguish it from one it issued itself, because it checks the signature, and the signature is genuine.
 
-[[IMAGE_42]]
+<img width="3203" height="1201" alt="step-42" src="https://github.com/user-attachments/assets/7e588355-ddc7-48cb-9480-f5d44545df60" />
 
-[[IMAGE_43]]
 
-[[IMAGE_44]]
+<img width="3013" height="1485" alt="step-43" src="https://github.com/user-attachments/assets/58d068f8-2bcf-462b-9c94-5c3088804905" />
+
+
+<img width="1991" height="1189" alt="step-44" src="https://github.com/user-attachments/assets/6c01c650-422f-4663-a6f5-4d46aeda0722" />
+
 
 With the admin token accepted, the file endpoint opens.
 
-[[IMAGE_45]]
+<img width="2822" height="1460" alt="step-45" src="https://github.com/user-attachments/assets/1a864db1-fd15-470e-beec-d721f001b987" />
+
 
 ### Step 14: From File Access to a Web Shell
 
 The reachable directory contains a PHP shell file (`shell.php`). Edit its callback IP to Kali's address, serve the folder, set a Netcat listener, and call the endpoint for `shell.php`:
 
-[[IMAGE_46]]
+<img width="2546" height="375" alt="step-46" src="https://github.com/user-attachments/assets/23505eb3-38fc-4f23-b67f-5eece105d783" />
 
-[[IMAGE_47]]
 
-[[IMAGE_48]]
+<img width="1924" height="159" alt="step-47" src="https://github.com/user-attachments/assets/383ace2c-f0cc-41e0-913c-35cf20a8ad62" />
+
+
+<img width="2825" height="297" alt="step-48" src="https://github.com/user-attachments/assets/de22fd1f-e4ee-40e3-baf7-3e09d9335bd3" />
+
 
 The listener catches the connection — a web shell on the target, running as an ordinary service user. Privilege escalation is still ahead.
 
-[[IMAGE_49]]
+<img width="2349" height="655" alt="step-49" src="https://github.com/user-attachments/assets/50ca3c03-1b7c-4d63-9e5a-2dbfacb36de1" />
 
-[[IMAGE_50]]
+
+<img width="1637" height="586" alt="step-50" src="https://github.com/user-attachments/assets/91427479-8120-48c4-84ee-ae499dac1178" />
+
 
 ### Step 15: Web-Shell Loot — a Flag and the Database File
 
 List the working directory and read what is there: a **flag** sits in the web area.
 
-[[IMAGE_51]]
+<img width="2514" height="1365" alt="step-51" src="https://github.com/user-attachments/assets/70ea5c4b-9d44-4b03-96b0-611d6a765315" />
 
-[[IMAGE_52]]
+
+<img width="1118" height="203" alt="step-52" src="https://github.com/user-attachments/assets/1d2f973d-2cbc-4f5c-8363-d40a5fbf3504" />
+
 
 Then open the database-related file. Querying the application's user store shows **two accounts — `root` and `devops`** — and `devops`' password is recoverable from it (the value is in the screenshot and is not repeated here). Remember the `.enc` clue from Step 5: `devops` is a *system* user on this box, not just an app account.
 
-[[IMAGE_53]]
+<img width="1018" height="912" alt="step-53" src="https://github.com/user-attachments/assets/2415ba52-3118-4d6b-bf4f-010e36d92a81" />
 
-[[IMAGE_54]]
 
-[[IMAGE_55]]
+<img width="1897" height="209" alt="step-54" src="https://github.com/user-attachments/assets/868fcccd-cf0b-4722-bbf7-ae427921c83b" />
+
+
+<img width="2414" height="1363" alt="step-55" src="https://github.com/user-attachments/assets/82127121-0a27-44ca-a3a4-ca1c027a8d89" />
+
 
 ### Step 16: SSH as `devops`
 
@@ -248,37 +277,47 @@ ssh devops@10.48.x.x
 
 It works — a real SSH shell as `devops`, and another **flag** in the home directory.
 
-[[IMAGE_56]]
+<img width="2336" height="474" alt="step-56" src="https://github.com/user-attachments/assets/c7bc366b-0686-4a3a-899f-67e8d86e9dee" />
 
-[[IMAGE_57]]
 
-[[IMAGE_58]]
+<img width="2343" height="630" alt="step-57" src="https://github.com/user-attachments/assets/47b63985-6cf4-4c5b-a665-fc0329468b9b" />
+
+
+<img width="1821" height="341" alt="step-58" src="https://github.com/user-attachments/assets/08fc66dd-7833-42e3-8b13-156898391945" />
+
 
 ### Step 17: Watch the System with pspy — a Root Cron Job
 
 Root is still missing, so watch what the machine itself runs. In `/opt/tools` there is a copy of **pspy64**, the tool that monitors processes — including cron jobs — without needing root. Run it and wait:
 
-[[IMAGE_59]]
+<img width="2340" height="889" alt="step-59" src="https://github.com/user-attachments/assets/7d836c65-af51-4ffb-b47f-1494638675de" />
+
 
 pspy shows a **health-report script being executed again and again** — a scheduled job, running as root. Check the script's permissions: the file lives in a monitoring-tools directory, and **`devops` can write to it**. A root cron job executing a user-writable script is the end of the chain.
 
-[[IMAGE_60]]
+<img width="2580" height="704" alt="step-60" src="https://github.com/user-attachments/assets/ef409f68-bced-4e4c-ae3e-771526dabef5" />
 
-[[IMAGE_61]]
 
-[[IMAGE_62]]
+<img width="2144" height="402" alt="step-61" src="https://github.com/user-attachments/assets/f1eedff8-0935-4951-a91f-36c7f655a4a0" />
+
+
+<img width="2830" height="783" alt="step-62" src="https://github.com/user-attachments/assets/f0a0f924-669b-46cb-b996-3d7bf0e7b896" />
+
 
 ### Step 18: Poison the Script, Catch Root
 
 Edit the health-report script and append a one-line PHP reverse-shell payload pointing back at Kali. Set the listener and wait for the next scheduled run:
 
-[[IMAGE_63]]
+<img width="2703" height="575" alt="step-63" src="https://github.com/user-attachments/assets/81d9b9e0-7c37-4b8f-9c83-0646349b521f" />
 
-[[IMAGE_64]]
+
+<img width="1762" height="270" alt="step-64" src="https://github.com/user-attachments/assets/695026b7-e761-4d8f-9304-1ef068724c8c" />
+
 
 The job fires, the payload executes with the job's privileges — and the shell that arrives is **root**. Read the final flag from `/root`.
 
-[[IMAGE_65]]
+<img width="2510" height="780" alt="step-65" src="https://github.com/user-attachments/assets/e32f7c53-b1f8-46b0-9b17-ee24274bcffb" />
+
 
 ## Key Takeaways
 
